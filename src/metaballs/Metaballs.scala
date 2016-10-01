@@ -14,7 +14,7 @@ object Metaballs extends Game {
     balls.foreach(_.step(dt))
   }
   def draw() = {
-    val res = 7.0
+    val res = 15.0
     val ww = (width * res).toInt
     val hh = (height * res).toInt
     val arr = Array.tabulate(ww, hh)((xi, yi) => {
