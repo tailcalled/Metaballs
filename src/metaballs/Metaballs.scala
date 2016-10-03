@@ -1,6 +1,8 @@
 package metaballs
 
 import gamefx._
+import javafx.scene.input.KeyCode
+
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
@@ -32,6 +34,7 @@ object Metaballs extends Game {
       else if (xi >= ww) at(xi - ww, yi)
       else if (yi >= hh) at(xi, yi - hh)
       else arr(xi)(yi)
+    val details = down(KeyCode.SPACE)
     def layer(threshold: Double, color: Color) = {
       val buff = buffer.transform(Scale(1/res, 1/res))
       for (x <- 0 until ww) {
@@ -41,23 +44,32 @@ object Metaballs extends Game {
           val c01 = at(x, y + 1) > threshold
           val c10 = at(x + 1, y) > threshold
           val c11 = at(x + 1, y + 1) > threshold
-          val poly = ArrayBuffer.newBuilder[Pt]
-          poly.sizeHint(8)
-          def int(a: Double, b: Double) = {
-            val alpha = b - a
-            (threshold - a) / alpha
+          if (!details || y > hh/3) {
+            val poly = ArrayBuffer.newBuilder[Pt]
+            poly.sizeHint(8)
+            def int(a: Double, b: Double) = {
+              val alpha = b - a
+              if (!details || x < ww/2)
+                (threshold - a) / alpha
+              else 0.5
+            }
+            if (c00) poly += Pt(0, 0)
+            if (!c00 && c01 || c00 && !c01) poly += Pt(0, int(at(x, y), at(x, y + 1)))
+            if (c01) poly += Pt(0, 1)
+            if (!c01 && c11 || c01 && !c11) poly += Pt(int(at(x, y + 1), at(x + 1, y + 1)), 1)
+            if (c11) poly += Pt(1, 1)
+            if (!c11 && c10 || c11 && !c10) poly += Pt(1, int(at(x + 1, y), at(x + 1, y + 1)))
+            if (c10) poly += Pt(1, 0)
+            if (!c10 && c00 || c10 && !c00) poly += Pt(int(at(x, y), at(x + 1, y)), 0)
+            val p = poly.result
+            if (c00 && c01 && c10 && c11) b.drawPgram(Identity, color)
+            else if (!p.isEmpty) b.drawPoly(Identity, p, color)
           }
-          if (c00) poly += Pt(0, 0)
-          if (!c00 && c01 || c00 && !c01) poly += Pt(0, int(at(x, y), at(x, y + 1)))
-          if (c01) poly += Pt(0, 1)
-          if (!c01 && c11 || c01 && !c11) poly += Pt(int(at(x, y + 1), at(x + 1, y + 1)), 1)
-          if (c11) poly += Pt(1, 1)
-          if (!c11 && c10 || c11 && !c10) poly += Pt(1, int(at(x + 1, y), at(x + 1, y + 1)))
-          if (c10) poly += Pt(1, 0)
-          if (!c10 && c00 || c10 && !c00) poly += Pt(int(at(x, y), at(x + 1, y)), 0)
-          val p = poly.result
-          if (c00 && c01 && c10 && c11) b.drawPgram(Identity, color)
-          else if (!p.isEmpty) b.drawPoly(Identity, p, color)
+          else {
+            val q = (at(x, y) * 127 + 127).floor.toInt max 0 min 255
+            val c = (0xFF << 24) | (q << 16) | (q << 8) | q
+            b.drawPgram(Identity, Color(c))
+          }
         }
       }
     }
